@@ -180,7 +180,7 @@ export default function Home() {
 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
-      const response = await fetch(`${baseUrl}/api/import`, {
+      const response = await fetch(`${baseUrl}/api/imports`, {
         method: 'POST',
         body: formData,
         signal: abortController.signal
@@ -204,7 +204,7 @@ export default function Home() {
         
         const pollInterval = setInterval(async () => {
           try {
-            const pollRes = await fetch(`${baseUrl}/api/import/${jobId}`, {
+            const pollRes = await fetch(`${baseUrl}/api/imports/${jobId}`, {
               signal: abortControllerRef.current?.signal
             });
             

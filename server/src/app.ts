@@ -16,7 +16,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-app.use('/api/import', importRoutes);
+app.use('/api/imports', importRoutes);
 app.use('/api/schema', schemaRoutes);
 app.use('/api/mappings', mappingRoutes);
 

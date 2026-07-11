@@ -28,7 +28,7 @@ export function HistoricalImports() {
   const fetchImports = async () => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
-      const res = await fetch(`${baseUrl}/api/import`);
+      const res = await fetch(`${baseUrl}/api/imports`);
       const data = await res.json();
       if (data.success) {
         setImports(data.data);
@@ -44,7 +44,7 @@ export function HistoricalImports() {
     setLeadsLoading(true);
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
-      const res = await fetch(`${baseUrl}/api/import/${id}/leads`);
+      const res = await fetch(`${baseUrl}/api/imports/${id}/leads`);
       const data = await res.json();
       if (data.success) {
         setLeads(data.data);

@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import fs from 'fs';
 import path from 'path';
 
-const API_URL = 'http://127.0.0.1:4000/api/import';
+const API_URL = 'http://127.0.0.1:4000/api/imports';
 
 async function uploadCsv(filePath: string) {
   const formData = new FormData();
