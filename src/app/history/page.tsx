@@ -21,6 +21,8 @@ interface ImportRecord {
 }
 
 export default function HistoryPage() {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+  
   const [history, setHistory] = useState<ImportRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -29,14 +31,14 @@ export default function HistoryPage() {
   const [sortBy, setSortBy] = useState<"date_desc" | "date_asc" | "rows_desc" | "rows_asc">("date_desc");
 
   useEffect(() => {
-    fetch("/api/imports")
+    fetch(`${baseUrl}/api/imports`)
       .then(res => res.json())
       .then(data => {
         setHistory(data);
         setIsLoading(false);
       })
       .catch(() => setIsLoading(false));
-  }, []);
+  }, [baseUrl]);
 
   const handleRetry = (record: ImportRecord) => {
     alert(`To retry importing ${record.filename}, please start a new import and re-upload the file.`);
