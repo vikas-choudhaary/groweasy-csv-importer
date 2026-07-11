@@ -16,6 +16,8 @@ interface SchemaMappingStudioProps {
 }
 
 export function SchemaMappingStudio({ headers, records, onContinue, onBack, initialPreset }: SchemaMappingStudioProps) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+  
   const [schema, setSchema] = useState<SchemaField[]>([]);
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
@@ -37,9 +39,9 @@ export function SchemaMappingStudio({ headers, records, onContinue, onBack, init
     const loadData = async () => {
       try {
         const [schemaRes, presetsRes, suggestRes] = await Promise.all([
-          fetch('http://localhost:4000/api/schema/metadata'),
-          fetch('http://localhost:4000/api/mappings/presets'),
-          fetch(`http://localhost:4000/api/mappings/presets/suggest?headers=${encodeURIComponent(headers.join(','))}`)
+          fetch(`${baseUrl}/api/schema/metadata`),
+          fetch(`${baseUrl}/api/mappings/presets`),
+          fetch(`${baseUrl}/api/mappings/presets/suggest?headers=${encodeURIComponent(headers.join(','))}`)
         ]);
         
         const schemaData = await schemaRes.json();
@@ -80,7 +82,7 @@ export function SchemaMappingStudio({ headers, records, onContinue, onBack, init
             if (unresolved.length > 0) {
             setIsGenerating(true);
             try {
-              const res = await fetch(`http://localhost:4000/api/mappings/suggest`, {
+              const res = await fetch(`${baseUrl}/api/mappings/suggest`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -173,7 +175,7 @@ export function SchemaMappingStudio({ headers, records, onContinue, onBack, init
 
     setIsGenerating(true);
     try {
-      const res = await fetch('http://localhost:4000/api/mappings/suggest', {
+      const res = await fetch(`${baseUrl}/api/mappings/suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -243,7 +245,7 @@ export function SchemaMappingStudio({ headers, records, onContinue, onBack, init
   const handleSavePreset = async (name: string, description: string) => {
     try {
       const ignoredColumns = mappings.filter(m => m.source === 'IGNORED').map(m => m.sourceColumn);
-      const res = await fetch('http://localhost:4000/api/mappings/presets', {
+      const res = await fetch(`${baseUrl}/api/mappings/presets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -296,7 +298,7 @@ export function SchemaMappingStudio({ headers, records, onContinue, onBack, init
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this preset?')) return;
     try {
-      await fetch(`http://localhost:4000/api/mappings/presets/${id}`, { method: 'DELETE' });
+      await fetch(`${baseUrl}/api/mappings/presets/${id}`, { method: 'DELETE' });
       setPresets(presets.filter(p => p.id !== id));
       setSuggestedPresets(suggestedPresets.filter(p => p.id !== id));
     } catch (e) { console.error('Delete failed', e); }
@@ -307,7 +309,7 @@ export function SchemaMappingStudio({ headers, records, onContinue, onBack, init
     const name = prompt('Enter new name:', currentName);
     if (!name || name === currentName) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/mappings/presets/${id}`, {
+      const res = await fetch(`${baseUrl}/api/mappings/presets/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
