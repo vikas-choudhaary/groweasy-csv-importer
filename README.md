@@ -6,7 +6,11 @@ The application provides CSV preview, AI-assisted schema mapping, manual mapping
 
 ## Live Application
 
-Hosted Application: To be added after deployment
+
+**Application:** https://groweasy-csv-importer-vikas124.vercel.app/
+
+> The backend runs on Render's free tier and may take up to a minute to wake up after inactivity.
+
 
 ## Repository
 
