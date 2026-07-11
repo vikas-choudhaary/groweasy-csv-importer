@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* Spacing Scale (4pt base) */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+  --spacing-32: 8rem;
+
+  /* Abstracted Semantic Color Theme */
+  --color-background: var(--bg-base);
+  --color-background-elevated: var(--bg-elevated);
+  --color-foreground: var(--fg-base);
+  --color-foreground-muted: var(--fg-muted);
+  --color-foreground-subtle: var(--fg-subtle);
+  
+  --color-surface: var(--bg-surface);
+  --color-surface-hover: var(--bg-surface-hover);
+  --color-surface-light: var(--bg-surface-light);
+  
+  --color-border: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--accent-interactive);
+  --color-primary-hover: var(--accent-atmospheric);
+  --color-primary-foreground: var(--bg-base);
+
+  --color-success: var(--success-base);
+  --color-success-bg: var(--success-bg);
+  --color-error: var(--error-base);
+  --color-error-bg: var(--error-bg);
+  --color-warning: var(--warning-base);
+  --color-warning-bg: var(--warning-bg);
+
+  --radius-sm: 6px;   /* Inputs */
+  --radius-md: 8px;   /* Buttons */
+  --radius-lg: 12px;  /* Small panels */
+  --radius-xl: 16px;  /* Large surfaces */
+}
+
+/* Light Theme (Fallbacks, keeping it premium and minimal) */
+:root {
+  --bg-base: #FAFAFA;
+  --bg-elevated: rgba(255, 255, 255, 0.7);
+  --bg-surface: rgba(255, 255, 255, 0.6);
+  --bg-surface-hover: rgba(255, 255, 255, 0.85);
+  --bg-surface-light: rgba(255, 255, 255, 0.95);
+  
+  --fg-base: #10161E;
+  --fg-muted: #697586;
+  --fg-subtle: #9AA4B2;
+  
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+
+  --accent-atmospheric: #9281f7;
+  --accent-interactive: #7C66DC; /* Deeper violet for light mode contrast */
+
+  --success-base: #468661;
+  --success-bg: rgba(70,134,97,0.1);
+  
+  --error-base: #B4514E;
+  --error-bg: rgba(180,81,78,0.1);
+  
+  --warning-base: #A6864C;
+  --warning-bg: rgba(166,134,76,0.1);
+}
+
+/* Dark Theme (Primary Premium Look) */
+.dark {
+  --bg-base: #000000;
+  --bg-elevated: rgba(11, 14, 20, 0.55);
+  --bg-surface: rgba(11, 14, 20, 0.35);
+  --bg-surface-hover: rgba(18, 22, 31, 0.65);
+  --bg-surface-light: rgba(26, 31, 43, 0.45);
+  
+  --fg-base: #ffffff;
+  --fg-muted: #a1a4a5;
+  --fg-subtle: #f0f0f0; /* Using this for body text */
+  
+  --border-subtle: #292d30;
+  --border-strong: rgba(255, 255, 255, 0.2);
+
+  --accent-interactive: #9281f7;
+  --accent-atmospheric: #baa7ff;
+
+  --success-base: #78A98C;
+  --success-bg: rgba(120,169,140,0.1);
+  
+  --error-base: #C97A78;
+  --error-bg: rgba(201,122,120,0.1);
+  
+  --warning-base: #C4A875;
+  --warning-bg: rgba(196,168,117,0.1);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Base Rules */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.04em; /* Premium tight tracking on headings */
+}
+
+/* Tabular numerals for data tables */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessibility: Focus Rings */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Mandatory Reduced Motion Fallback */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

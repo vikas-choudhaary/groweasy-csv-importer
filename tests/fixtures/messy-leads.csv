@@ -1,0 +1,22 @@
+Lead Full Name,Contact Mail,WhatsApp No,Mobile 2,Campaign,Sales Person,Remarks,Lead Stage,Created On,Organisation,Location,GarbageColumn
+John Standard,john.standard@example.com,9876543210,,leads_on_demand,Bob Smith,Standard row,GOOD_LEAD_FOLLOW_UP,2026-07-11,Corp,New York,Ignore Me
+Multi Email,multi1@foo.com; multi2@bar.com,1122334455,5544332211,meridian_tower,Alice,Two emails two phones,follow up,07/11/2026,Tech Co,London,X
+Complex Phone,complex@test.com,+91 (123) 456-7890,,Eden Park,Charlie,Phone with formatting,deal closed,2026-07-11T12:00:00Z,Org,Berlin,X
+Diff Date,diffdate@test.com,9998887776,,varah swamy,Dave,Valid date string,not interested,Jan 1st 2026,Comp,Paris,X
+Invalid Date,invaliddate@test.com,5556667778,,SARJAPUR PLOTS,Eve,Bad date,unable to connect,not a real date,LLC,Tokyo,X
+Synonyms,syn@test.com,3334445556,,LEADS ON DEMAND,Frank,Checking synonym logic,good lead,2026-07-11,Inc,Sydney,X
+Unknown Status,unkstat@test.com,1112223334,,meridian_tower,Grace,Status is gibberish,random status,2026-07-11,GmbH,Dubai,X
+Cased Source,cased@test.com,7778889990,,mErIdiAn ToWer,Hank,Weird casing,DID_NOT_CONNECT,2026-07-11,Corp,Toronto,X
+Unknown Source,unksource@test.com,4445556667,,Unknown Campaign,Ivy,Source is gibberish,BAD_LEAD,2026-07-11,LLC,Mumbai,X
+Multiline Remarks,multi@test.com,8887776665,,eden_park,Jack,"This remark has
+multiple lines, and a comma, and ""quotes""",SALE_DONE,2026-07-11,Inc,Delhi,X
+Email Only,emailonly@test.com,,,,Kathy,No phone,follow up,2026-07-11,Corp,Chennai,X
+Mobile Only,,1231231234,,meridian_tower,Leo,No email,deal closed,2026-07-11,LLC,Kolkata,X
+Neither Contact,,,,eden_park,Mona,This should be skipped,good lead,2026-07-11,Inc,Pune,X
+Malformed Email,bademail@,9990001112,,varah_swamy,Nina,Email lacks domain,BAD_LEAD,2026-07-11,Corp,Hyderabad,X
+Short Phone,short@test.com,123,,sarjapur_plots,Oscar,Phone too short,DID_NOT_CONNECT,2026-07-11,LLC,Bangalore,X
+John Standard,john.standard@example.com,9876543210,,leads_on_demand,Bob Smith,Exact Duplicate,GOOD_LEAD_FOLLOW_UP,2026-07-11,Corp,New York,Ignore Me
+Missing Optionals,missing@test.com,9876543211,,,,Only required fields,,,,,,X
+Trailing Comma,trailing@test.com,9876543212,,eden_park,,trailing,,,,,
+Empty Row,,,,,,,,,,,
+Extra Data,extra@test.com,9876543213,,meridian_tower,Sales,Notes,SALE_DONE,2026-07-11,Org,City,Random,Extra,Cols

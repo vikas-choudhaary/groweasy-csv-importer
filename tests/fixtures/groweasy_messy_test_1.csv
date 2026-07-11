@@ -1,0 +1,7 @@
+Name,Email,Contact Numbers,Created On,Notes
+Priya Mehta,priya.mehta@example.com,9876543210,2025-03-15,Good lead
+Rohan Shah,,9000011111,2025-04-01,Mobile only
+Anita Desai,anita.desai@example.com; anita.work@example.com,9000022222,2025-05-10,Multiple emails
+Suresh Kumar,suresh.kumar@example.com,9000033333; 9000044444,2025-06-20,Multiple mobiles
+Vikram Nair,vikram.nair@example.com,9000055555,2025-07-01,Has valid date
+Invalid Contact,,,2025-07-05,No email no mobile
