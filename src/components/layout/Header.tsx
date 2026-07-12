@@ -52,7 +52,10 @@ export function Header() {
             <Database size={16} weight="fill" />
           </div>
           <div className="flex flex-col hidden sm:flex">
-            <span className="text-sm font-semibold tracking-tight text-(--color-foreground) leading-none group-hover:text-(--color-primary) transition-colors">GrowEasy</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold tracking-tight text-(--color-foreground) leading-none group-hover:text-(--color-primary) transition-colors">GrowEasy</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#9b87f5]/10 text-[#9b87f5] font-medium tracking-wider uppercase border border-[#9b87f5]/20">Demo</span>
+            </div>
             <span className="text-[10px] text-(--color-foreground)/50 tracking-widest uppercase mt-0.5">AI Import Studio</span>
           </div>
         </Link>
@@ -65,18 +68,6 @@ export function Header() {
             >
               Import Workspace
             </Link>
-            <Link 
-              href="/mappings"
-              className={`transition-colors ${pathname.startsWith('/mappings') ? 'text-(--color-foreground)' : 'text-(--color-foreground)/50 hover:text-(--color-foreground)'}`}
-            >
-              Saved Mappings
-            </Link>
-            <Link 
-              href="/history"
-              className={`transition-colors ${pathname.startsWith('/history') ? 'text-(--color-foreground)' : 'text-(--color-foreground)/50 hover:text-(--color-foreground)'}`}
-            >
-              Import History
-            </Link>
           </div>
         </div>
 
@@ -87,18 +78,6 @@ export function Header() {
             className={`${pathname === '/' ? 'text-(--color-foreground)' : 'text-(--color-foreground)/50'}`}
           >
             Import
-          </Link>
-          <Link 
-            href="/mappings"
-            className={`${pathname.startsWith('/mappings') ? 'text-(--color-foreground)' : 'text-(--color-foreground)/50'}`}
-          >
-            Mappings
-          </Link>
-          <Link 
-            href="/history"
-            className={`${pathname.startsWith('/history') ? 'text-(--color-foreground)' : 'text-(--color-foreground)/50'}`}
-          >
-            History
           </Link>
         </div>
 
@@ -180,6 +159,16 @@ export function Header() {
                 </Button>
               </div>
               <div className="p-5 flex flex-col gap-4 text-sm text-(--color-foreground)/80 leading-relaxed tracking-tight">
+                <div className="bg-gradient-to-r from-[#7E69AB]/10 to-[#9b87f5]/10 border border-[#9b87f5]/20 px-4 py-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-[#9b87f5]" />
+                    <strong className="text-[#9b87f5] text-xs uppercase tracking-wider">Demo Application</strong>
+                  </div>
+                  <p className="text-xs text-(--color-foreground)/70">
+                    This is a technical assignment demonstration. No authentication or data persistence beyond the current session.
+                  </p>
+                </div>
+                
                 <p>
                   <strong>AI Import Studio</strong> allows you to upload any CSV file and automatically map it to the GrowEasy CRM schema using Google Gemini.
                 </p>
@@ -190,7 +179,7 @@ export function Header() {
                   <li>Invalid contacts are safely skipped.</li>
                 </ul>
                 <div className="bg-(--color-surface-hover) p-3 rounded-lg border border-(--color-border)/30 mt-2 text-xs">
-                  <strong>Privacy Note:</strong> Uploaded CSV rows are sent to Gemini for semantic extraction. Only mapping context is retained.
+                  <strong>Privacy:</strong> Uploaded CSV data is processed only for the current import session. Data is sent to Google Gemini for AI extraction. Do not upload highly sensitive personal information to this public demo.
                 </div>
               </div>
             </motion.div>

@@ -4,7 +4,6 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { AppError } from '../utils/errors';
 import { jobService } from '../services/jobs.service';
-import db from '../utils/db';
 
 export const importCsv = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -119,60 +118,8 @@ export const getJobStatus = (req: Request, res: Response): void => {
   res.status(200).json(job);
 };
 
-export const getImports = (req: Request, res: Response): void => {
-  try {
-    const rows = db.prepare('SELECT * FROM imports ORDER BY timestamp DESC').all();
-    res.status(200).json({ success: true, data: rows });
-  } catch (error) {
-    console.error('[Backend] Get imports error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get imports' });
-  }
-};
-
-export const getImportLeads = (req: Request, res: Response): void => {
-  try {
-    const importId = req.params.id;
-    const rows = db.prepare('SELECT * FROM leads WHERE import_id = ?').all(importId);
-    res.status(200).json({ success: true, data: rows });
-  } catch (error) {
-    console.error('[Backend] Get import leads error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get import leads' });
-  }
-};
-
-export const getImportById = (req: Request, res: Response): void => {
-  try {
-    const importId = req.params.id;
-    const row = db.prepare('SELECT * FROM imports WHERE id = ?').get(importId) as any;
-    if (!row) {
-      res.status(404).json({ success: false, error: 'Import not found' });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        ...row,
-        sourceHeaders: row.sourceHeaders ? JSON.parse(row.sourceHeaders) : [],
-        mappingSnapshot: row.mappingSnapshot ? JSON.parse(row.mappingSnapshot) : null,
-        importedRecords: row.importedRecords ? JSON.parse(row.importedRecords) : [],
-        skippedRecords: row.skippedRecords ? JSON.parse(row.skippedRecords) : []
-      }
-    });
-  } catch (error) {
-    console.error('[Backend] Get import by id error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get import' });
-  }
-};
-
-export const deleteImport = (req: Request, res: Response): void => {
-  try {
-    const importId = req.params.id;
-    db.prepare('DELETE FROM imports WHERE id = ?').run(importId);
-    db.prepare('DELETE FROM leads WHERE import_id = ?').run(importId);
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('[Backend] Delete import error:', error);
-    res.status(500).json({ success: false, error: 'Failed to delete import' });
-  }
-};
+// Dead handlers removed (routes no longer exposed in privacy-safe public demo):
+// - getImports
+// - getImportLeads  
+// - getImportById
+// - deleteImport

@@ -6,9 +6,6 @@ import { serverSideCrmRecordSchema } from '../schemas/crm.schema';
 import { AppError } from '../utils/errors';
 import { jobService } from './jobs.service';
 import fs from 'fs';
-import db from '../utils/db';
-import crypto from 'crypto';
-import path from 'path';
 
 function isValidDate(dateStr: string): boolean {
   if (!dateStr || typeof dateStr !== 'string') return false;
@@ -250,36 +247,6 @@ export async function processImport(filePath: string, jobId: string, mappingConf
       if (error instanceof AppError || (error as AppError)?.name === 'AppError') {
         const appErr = error as AppError;
         jobService.failJob(jobId, { code: appErr.code, message: appErr.message, retryable: appErr.retryable });
-        
-        const originalFilename = path.basename(filePath); 
-        const filename = (mappingConfig && mappingConfig.filename as string) || originalFilename.replace(/^.*-/, '');
-        const duration = Date.now() - startTimeMs;
-        
-        try {
-          db.prepare(`
-            INSERT INTO imports (
-              id, filename, rowCount, successRate, timestamp,
-              fileSize, sourceHeaders, importedCount, skippedCount, status,
-              startedAt, completedAt, duration, mappingId, mappingSnapshot,
-              processingMode, errorCategory, errorMessage, retryable,
-              importedRecords, skippedRecords
-            )
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            jobId, filename, rawRecords.length, 0, fileSize,
-            JSON.stringify(rawRecords.length > 0 ? Object.keys(rawRecords[0]) : []),
-            parsedRecords.length, skippedRecords.length, 'FAILED',
-            startedAt, new Date().toISOString(), duration,
-            (mappingConfig && mappingConfig.mappingId) ? mappingConfig.mappingId : null,
-            mappingConfig ? JSON.stringify(mappingConfig) : null,
-            process.env.AI_MOCK_MODE === 'true' ? 'MOCK' : 'GEMINI',
-            appErr.code, appErr.message, appErr.retryable ? 1 : 0,
-            JSON.stringify(parsedRecords), JSON.stringify(skippedRecords)
-          );
-        } catch (dbErr) {
-          console.error('[Backend] Failed to persist failed import:', dbErr);
-        }
-
         fs.unlink(filePath, () => {});
         return;
       }
@@ -304,7 +271,7 @@ export async function processImport(filePath: string, jobId: string, mappingConf
       } else if (errorMessage.includes('schema') || errorMessage.includes('validation')) {
         code = 'INVALID_AI_RESPONSE';
         userMessage = 'AI response format was invalid or rejected. Check schema configuration.';
-        retryable = true; // Maybe schema is a hallucination that can be retried
+        retryable = true;
       } else if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('fetch')) {
         code = 'NETWORK_ERROR';
         userMessage = 'A network error occurred while communicating with the AI service.';
@@ -314,36 +281,6 @@ export async function processImport(filePath: string, jobId: string, mappingConf
       }
 
       jobService.failJob(jobId, { code, message: userMessage, retryable });
-      
-      const originalFilename = path.basename(filePath); 
-      const filename = (mappingConfig && mappingConfig.filename as string) || originalFilename.replace(/^.*-/, '');
-      const duration = Date.now() - startTimeMs;
-      
-      try {
-        db.prepare(`
-          INSERT INTO imports (
-            id, filename, rowCount, successRate, timestamp,
-            fileSize, sourceHeaders, importedCount, skippedCount, status,
-            startedAt, completedAt, duration, mappingId, mappingSnapshot,
-            processingMode, errorCategory, errorMessage, retryable,
-            importedRecords, skippedRecords
-          )
-          VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          jobId, filename, rawRecords.length, 0, fileSize,
-          JSON.stringify(rawRecords.length > 0 ? Object.keys(rawRecords[0]) : []),
-          parsedRecords.length, skippedRecords.length, 'FAILED',
-          startedAt, new Date().toISOString(), duration,
-          (mappingConfig && mappingConfig.mappingId) ? mappingConfig.mappingId : null,
-          mappingConfig ? JSON.stringify(mappingConfig) : null,
-          process.env.AI_MOCK_MODE === 'true' ? 'MOCK' : 'GEMINI',
-          code, userMessage, retryable ? 1 : 0,
-          JSON.stringify(parsedRecords), JSON.stringify(skippedRecords)
-        );
-      } catch (dbErr) {
-        console.error('[Backend] Failed to persist failed import:', dbErr);
-      }
-
       fs.unlink(filePath, () => {});
       return;
     }
@@ -352,219 +289,46 @@ export async function processImport(filePath: string, jobId: string, mappingConf
   }
 
   const successRate = rawRecords.length > 0 ? (parsedRecords.length / rawRecords.length) : 0;
-  const originalFilename = path.basename(filePath); 
-  const filename = (mappingConfig && mappingConfig.filename as string) || originalFilename.replace(/^.*-/, '');
-  const completedAt = new Date().toISOString();
-  const duration = Date.now() - startTimeMs;
-  const sourceHeaders = rawRecords.length > 0 ? Object.keys(rawRecords[0]) : [];
 
-  // Build a set of existing emails in the database to detect duplicates
-  const existingEmails = new Set<string>();
-  try {
-    const rows = db.prepare('SELECT email FROM leads WHERE email IS NOT NULL').all() as { email: string }[];
-    for (const row of rows) {
-      if (row.email) existingEmails.add(row.email.toLowerCase());
-    }
-  } catch (e) {
-    console.error('[Backend] Failed to fetch existing emails for dedup:', e);
-    // If we can't check existing emails, we can't reliably prevent duplicates.
-    // Continue anyway — the DB constraint will catch it.
-  }
-
-  // Track duplicates within the current import batch
+  // Duplicate detection within current CSV only (no cross-import checking in privacy-safe public demo)
   const seenEmailsInBatch = new Set<string>();
   const duplicateSkips: Array<{ record: ParsedCrmRecord; originalRecord: Record<string, unknown>; reason: string }> = [];
-  const successfullyInserted = new Set<ParsedCrmRecord>();
+  const successfullyProcessed: ParsedCrmRecord[] = [];
 
-  try {
-    const insertImport = db.prepare(`
-      INSERT INTO imports (
-        id, filename, rowCount, successRate, timestamp,
-        fileSize, sourceHeaders, importedCount, skippedCount, status,
-        startedAt, completedAt, duration, mappingId, mappingSnapshot,
-        processingMode, errorCategory, errorMessage, retryable,
-        importedRecords, skippedRecords
-      )
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+  for (const record of parsedRecords) {
+    const emailLower = (record.email || '').toLowerCase();
+    const hasEmail = Boolean(record.email && typeof record.email === 'string' && record.email.trim() !== '');
     
-    const insertLead = db.prepare(`
-      INSERT INTO leads (id, import_id, created_at, name, email, country_code, mobile_without_country_code, company, city, state, country, lead_owner, crm_status, crm_note, data_source, possession_time, description)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const transaction = db.transaction((parsed: ParsedCrmRecord[]) => {
-      insertImport.run(
-        jobId, 
-        filename, 
-        rawRecords.length, 
-        successRate,
-        fileSize,
-        JSON.stringify(sourceHeaders),
-        parsedRecords.length,
-        skippedRecords.length,
-        'COMPLETED',
-        startedAt,
-        completedAt,
-        duration,
-        (mappingConfig && mappingConfig.mappingId) ? mappingConfig.mappingId : null,
-        mappingConfig ? JSON.stringify(mappingConfig) : null,
-        process.env.AI_MOCK_MODE === 'true' ? 'MOCK' : 'GEMINI',
-        null,
-        null,
-        0,
-        JSON.stringify(parsedRecords),
-        JSON.stringify(skippedRecords)
-      );
-      
-      for (const record of parsed) {
-        const emailLower = (record.email || '').toLowerCase();
-        const hasEmail = Boolean(record.email && typeof record.email === 'string' && record.email.trim() !== '');
-        
-        // Check against existing DB emails OR emails seen in this batch
-        if (hasEmail && (existingEmails.has(emailLower) || seenEmailsInBatch.has(emailLower))) {
-          const originalRec = originalRecordMap.get(record) || {};
-          duplicateSkips.push({
-            record,
-            originalRecord: originalRec,
-            reason: 'Lead with this email already exists.'
-          });
-          continue;
-        }
-        
-        if (hasEmail) {
-          seenEmailsInBatch.add(emailLower);
-        }
-
-        try {
-          insertLead.run(
-            crypto.randomUUID(),
-            jobId,
-            record.created_at || null,
-            record.name || null,
-            record.email || null,
-            record.country_code || null,
-            record.mobile_without_country_code || null,
-            record.company || null,
-            record.city || null,
-            record.state || null,
-            record.country || null,
-            record.lead_owner || null,
-            record.crm_status || null,
-            record.crm_note || null,
-            record.data_source || null,
-            record.possession_time || null,
-            record.description || null
-          );
-          successfullyInserted.add(record);
-        } catch (insertErr) {
-          const e = insertErr as Error;
-          if (e.message.includes('UNIQUE constraint') || e.message.includes('SQLITE_CONSTRAINT_UNIQUE')) {
-            // Should not happen after our check, but handle it
-            const originalRec = originalRecordMap.get(record) || {};
-            duplicateSkips.push({
-              record,
-              originalRecord: originalRec,
-              reason: 'Lead with this email already exists.'
-            });
-          } else {
-            // Unexpected DB error — throw to fail the transaction
-            throw e;
-          }
-        }
-      }
-    });
-
-    transaction(parsedRecords);
-    
-    // Build the list of successfully imported records using the set of actually inserted records
-    const importedRecords = Array.from(successfullyInserted);
-    const totalImported = importedRecords.length;
-    const totalSkipped = skippedRecords.length + duplicateSkips.length;
-    const finalSuccessRate = rawRecords.length > 0 ? (totalImported / rawRecords.length) : 0;
-    
-    db.prepare(`
-      UPDATE imports 
-      SET importedCount = ?, skippedCount = ?, successRate = ?
-      WHERE id = ?
-    `).run(totalImported, totalSkipped, finalSuccessRate, jobId);
-    
-    // Also update the JSON arrays stored in the import row
-    db.prepare(`
-      UPDATE imports 
-      SET importedRecords = ?, skippedRecords = ?
-      WHERE id = ?
-    `).run(
-      JSON.stringify(importedRecords),
-      JSON.stringify([...skippedRecords, ...duplicateSkips.map(d => ({ sourceRowIndex: -1, originalRecord: d.originalRecord, reason: d.reason }))]),
-      jobId
-    );
-
-  } catch (dbErr) {
-    const err = dbErr as Error;
-    const isUniqueConstraint = err.message.includes('UNIQUE constraint') || err.message.includes('SQLITE_CONSTRAINT_UNIQUE');
-    
-    if (isUniqueConstraint) {
-      console.error('[Backend] Unexpected UNIQUE constraint during lead insert:', err.message);
-      // This should be caught inside the loop, not reach here
-    } else {
-      // Other DB errors — mark job as failed
-      console.error('[Backend] Database persistence failed:', dbErr);
-      const actualError = (dbErr as Record<string, unknown>)?.lastError || dbErr;
-      const errorMessage = (actualError instanceof Error ? actualError.message : String(actualError)) + ' ' + ((actualError as Record<string, unknown>)?.responseBody || '');
-      
-      jobService.failJob(jobId, { 
-        code: 'DATABASE_PERSISTENCE_ERROR', 
-        message: 'A database persistence error occurred during import. Some records may have been imported successfully. Check the import history for details.', 
-        retryable: false 
+    // Check only within current CSV upload (no database cross-import duplicate checking)
+    if (hasEmail && seenEmailsInBatch.has(emailLower)) {
+      const originalRec = originalRecordMap.get(record) || {};
+      duplicateSkips.push({
+        record,
+        originalRecord: originalRec,
+        reason: 'Duplicate email within the uploaded CSV file.'
       });
-      
-      const duration = Date.now() - startTimeMs;
-      
-      try {
-        db.prepare(`
-          INSERT INTO imports (
-            id, filename, rowCount, successRate, timestamp,
-            fileSize, sourceHeaders, importedCount, skippedCount, status,
-            startedAt, completedAt, duration, mappingId, mappingSnapshot,
-            processingMode, errorCategory, errorMessage, retryable,
-            importedRecords, skippedRecords
-          )
-          VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          jobId, filename, rawRecords.length, 0, fileSize,
-          JSON.stringify(rawRecords.length > 0 ? Object.keys(rawRecords[0]) : []),
-          successfullyInserted.size, skippedRecords.length + duplicateSkips.length, 'FAILED',
-          startedAt, new Date().toISOString(), duration,
-          (mappingConfig && mappingConfig.mappingId) ? mappingConfig.mappingId : null,
-          mappingConfig ? JSON.stringify(mappingConfig) : null,
-          process.env.AI_MOCK_MODE === 'true' ? 'MOCK' : 'GEMINI',
-          'DATABASE_ERROR', errorMessage, 0,
-          JSON.stringify(Array.from(successfullyInserted)), 
-          JSON.stringify([...skippedRecords, ...duplicateSkips.map(d => ({ sourceRowIndex: -1, originalRecord: d.originalRecord, reason: d.reason }))])
-        );
-      } catch (_) {
-        console.error('[Backend] Failed to persist failed import:', dbErr);
-      }
-
-      fs.unlink(filePath, () => {});
-      return;
+      continue;
     }
+    
+    if (hasEmail) {
+      seenEmailsInBatch.add(emailLower);
+    }
+
+    successfullyProcessed.push(record);
   }
 
-  // Build final lists for job completion using the records we actually inserted
-  const importedRecords = Array.from(successfullyInserted);
   const allSkippedRecords = [...skippedRecords, ...duplicateSkips.map(d => ({
     sourceRowIndex: -1,
     originalRecord: d.originalRecord,
     reason: d.reason
   }))];
   
-  const totalImported = importedRecords.length;
+  const totalImported = successfullyProcessed.length;
   const totalSkipped = allSkippedRecords.length;
 
+  // Store results in memory only (JobService) - no SQLite persistence of customer data
   jobService.completeJob(jobId, {
-    parsedRecords: importedRecords,
+    parsedRecords: successfullyProcessed,
     skippedRecords: allSkippedRecords,
     summary: {
       total: rawRecords.length,
@@ -573,5 +337,6 @@ export async function processImport(filePath: string, jobId: string, mappingConf
     }
   });
 
+  console.debug(`[Backend] Import ${jobId} completed: ${totalImported} imported, ${totalSkipped} skipped (${rawRecords.length} total). Results stored in-memory for 30 minutes.`);
   fs.unlink(filePath, () => {});
 }

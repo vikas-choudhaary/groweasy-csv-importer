@@ -85,10 +85,10 @@ export function CinematicBackground() {
           
           {/* Sparse moving data points */}
           <g fill="var(--color-primary)">
-            <motion.circle r="0.2" cx="20" cy="40" animate={{ cy: [40, 30, 40] }} transition={{ duration: 10, repeat: Infinity }} />
-            <motion.circle r="0.2" cx="40" cy="50" animate={{ cy: [50, 60, 50] }} transition={{ duration: 12, repeat: Infinity }} />
-            <motion.circle r="0.2" cx="60" cy="40" animate={{ cy: [40, 35, 40] }} transition={{ duration: 14, repeat: Infinity }} />
-            <motion.circle r="0.2" cx="80" cy="60" animate={{ cy: [60, 70, 60] }} transition={{ duration: 16, repeat: Infinity }} />
+            <motion.circle r="0.2" cx="20" initial={{ cy: 40 }} animate={{ cy: [40, 30, 40] }} transition={{ duration: 10, repeat: Infinity }} />
+            <motion.circle r="0.2" cx="40" initial={{ cy: 50 }} animate={{ cy: [50, 60, 50] }} transition={{ duration: 12, repeat: Infinity }} />
+            <motion.circle r="0.2" cx="60" initial={{ cy: 40 }} animate={{ cy: [40, 35, 40] }} transition={{ duration: 14, repeat: Infinity }} />
+            <motion.circle r="0.2" cx="80" initial={{ cy: 60 }} animate={{ cy: [60, 70, 60] }} transition={{ duration: 16, repeat: Infinity }} />
           </g>
         </svg>
       </motion.div>

@@ -38,6 +38,7 @@ export function MappingConstellation() {
           stroke="var(--color-primary)" 
           strokeWidth="1"
           strokeDasharray="4 4"
+          initial={{ strokeDashoffset: 20 }}
           animate={{ strokeDashoffset: [20, 0], opacity: [0.1, 0.4, 0.1] }}
           transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
         />

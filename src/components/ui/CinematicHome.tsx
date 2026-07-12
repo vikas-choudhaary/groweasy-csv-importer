@@ -126,9 +126,9 @@ export function CinematicHome({ onStartImport }: { onStartImport: () => void }) 
                 ))}
               </div>
               <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-                <path d="M 40% 30% Q 50% 50% 60% 30%" fill="none" stroke="var(--color-primary)" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
-                <path d="M 40% 50% Q 50% 50% 60% 50%" fill="none" stroke="var(--color-primary)" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
-                <path d="M 40% 70% Q 50% 50% 60% 70%" fill="none" stroke="var(--color-primary)" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
+                <path d="M 40 30 Q 50 50 60 30" fill="none" stroke="var(--color-primary)" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
+                <path d="M 40 50 Q 50 50 60 50" fill="none" stroke="var(--color-primary)" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
+                <path d="M 40 70 Q 50 50 60 70" fill="none" stroke="var(--color-primary)" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
               </svg>
             </div>
           </div>

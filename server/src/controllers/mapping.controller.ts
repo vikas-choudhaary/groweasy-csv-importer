@@ -2,8 +2,6 @@ import { Request, Response } from 'express';
 import { generateObject } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
-import db from '../utils/db';
-import crypto from 'crypto';
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -138,6 +136,29 @@ Rules:
     res.status(200).json({ success: true, data: formattedSuggestions });
   } catch (error: unknown) {
     console.error('[Backend] Suggestion error:', error);
+    
+    // Check if this is a Gemini API quota/rate limit error
+    const err = error as any;
+    const isQuotaError = 
+      err?.statusCode === 429 ||
+      err?.status === 429 ||
+      err?.code === 'RESOURCE_EXHAUSTED' ||
+      (err?.message && (
+        err.message.includes('quota exceeded') ||
+        err.message.includes('rate limit') ||
+        err.message.includes('RESOURCE_EXHAUSTED') ||
+        err.message.includes('429')
+      ));
+    
+    if (isQuotaError) {
+      res.status(429).json({ 
+        success: false, 
+        error: 'Gemini API quota exceeded. Please wait about a minute and try again.' 
+      });
+      return;
+    }
+    
+    // For all other errors, continue returning HTTP 500
     res.status(500).json({ success: false, error: 'Failed to generate suggestions' });
   }
 };
@@ -171,194 +192,11 @@ export const validateMapping = (req: Request, res: Response): void => {
   res.status(200).json({ success: true, valid: errors.length === 0, errors });
 };
 
-// Preset CRUD
-
-export const getPresets = (req: Request, res: Response): void => {
-  try {
-    const rows = db.prepare('SELECT * FROM mappings ORDER BY timestamp DESC').all();
-    const presets = rows.map((row: unknown) => {
-      const r = row as { id: string, name: string, description: string, sourceHeaders: string, usageCount: number, mappingJson: string, timestamp: string, updatedAt: string, lastUsedAt: string };
-      return {
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        sourceHeaders: r.sourceHeaders,
-        usageCount: r.usageCount,
-        mappingJson: JSON.parse(r.mappingJson),
-        timestamp: r.timestamp,
-        updatedAt: r.updatedAt,
-        lastUsedAt: r.lastUsedAt
-      };
-    });
-    res.status(200).json({ success: true, data: presets });
-  } catch (error) {
-    console.error('[Backend] Get presets error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get presets' });
-  }
-};
-
-export const createPreset = (req: Request, res: Response): void => {
-  try {
-    const { name, description, sourceHeaders, ignoredColumns, confidenceThreshold, mappingJson } = req.body;
-    if (!name || !mappingJson) {
-      res.status(400).json({ success: false, error: 'name and mappingJson are required' });
-      return;
-    }
-    
-    const id = crypto.randomUUID();
-    const strJson = typeof mappingJson === 'string' ? mappingJson : JSON.stringify(mappingJson);
-    const desc = description || '';
-    const srcHeadersStr = sourceHeaders ? JSON.stringify(sourceHeaders) : '[]';
-    const normHeadersStr = sourceHeaders ? JSON.stringify(sourceHeaders.map((h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, '_'))) : '[]';
-    const ignoredStr = ignoredColumns ? JSON.stringify(ignoredColumns) : '[]';
-    const conf = confidenceThreshold || 0;
-
-    db.prepare(`
-      INSERT INTO mappings (
-        id, name, mappingJson, description, sourceHeaders, normalizedSourceHeaders, 
-        ignoredColumns, confidenceThreshold, usageCount
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
-    `).run(id, name, strJson, desc, srcHeadersStr, normHeadersStr, ignoredStr, conf);
-
-    res.status(201).json({ success: true, data: { id, name, mappingJson: JSON.parse(strJson) } });
-  } catch (error) {
-    console.error('[Backend] Create preset error:', error);
-    res.status(500).json({ success: false, error: 'Failed to create preset' });
-  }
-};
-
-export const updatePreset = (req: Request, res: Response): void => {
-  try {
-    const { id } = req.params;
-    const { name, description, mappingJson } = req.body;
-    if (!name && !mappingJson && description === undefined) {
-      res.status(400).json({ success: false, error: 'name, description or mappingJson are required to update' });
-      return;
-    }
-
-    const current = db.prepare('SELECT * FROM mappings WHERE id = ?').get(id) as { name: string, description: string, mappingJson: string } | undefined;
-    if (!current) {
-      res.status(404).json({ success: false, error: 'Preset not found' });
-      return;
-    }
-
-    const newName = name || current.name;
-    const newDesc = description !== undefined ? description : current.description;
-    const newJson = mappingJson ? (typeof mappingJson === 'string' ? mappingJson : JSON.stringify(mappingJson)) : current.mappingJson;
-
-    db.prepare('UPDATE mappings SET name = ?, description = ?, mappingJson = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?')
-      .run(newName, newDesc, newJson, id);
-
-    res.status(200).json({ success: true, data: { id, name: newName, description: newDesc, mappingJson: JSON.parse(newJson) } });
-  } catch (error) {
-    console.error('[Backend] Update preset error:', error);
-    res.status(500).json({ success: false, error: 'Failed to update preset' });
-  }
-};
-
-export const deletePreset = (req: Request, res: Response): void => {
-  try {
-    const { id } = req.params;
-    db.prepare('DELETE FROM mappings WHERE id = ?').run(id);
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('[Backend] Delete preset error:', error);
-    res.status(500).json({ success: false, error: 'Failed to delete preset' });
-  }
-};
-
-export const suggestPresets = (req: Request, res: Response): void => {
-  try {
-    const { headers } = req.query;
-    if (!headers || typeof headers !== 'string') {
-      res.status(400).json({ success: false, error: 'headers query parameter is required' });
-      return;
-    }
-
-    const inputHeaders = headers.split(',').map(h => h.trim().toLowerCase());
-    
-    const rows = db.prepare('SELECT * FROM mappings').all();
-    const suggestions = rows.map((row: unknown) => {
-      const r = row as { id: string, name: string, mappingJson: string, timestamp: string, sourceHeaders?: string, confidenceThreshold?: number };
-      const mappingJson = JSON.parse(r.mappingJson);
-      
-      let presetHeaders: string[] = [];
-      if (r.sourceHeaders) {
-        try {
-          presetHeaders = JSON.parse(r.sourceHeaders).map((h: string) => h.trim().toLowerCase());
-        } catch { /* ignore */ }
-      }
-      if (presetHeaders.length === 0) {
-        presetHeaders = (mappingJson.mappings || []).map((m: { sourceColumn: string }) => m.sourceColumn.trim().toLowerCase());
-      }
-      
-      const intersection = inputHeaders.filter(h => presetHeaders.includes(h));
-      // Score based on exact matched headers / total headers
-      const exactMatchCount = intersection.length;
-      const expectedCount = presetHeaders.length || 1;
-      const matchPercentage = exactMatchCount / expectedCount;
-
-      return {
-        id: r.id,
-        name: r.name,
-        mappingJson,
-        timestamp: r.timestamp,
-        confidenceThreshold: r.confidenceThreshold || 0.8,
-        score: exactMatchCount,
-        matchPercentage,
-        matchedColumns: intersection,
-        missingColumns: presetHeaders.filter(h => !inputHeaders.includes(h)),
-        extraColumns: inputHeaders.filter(h => !presetHeaders.includes(h))
-      };
-    }).filter(p => p.matchPercentage >= 0.5) // Minimum 50% compatibility
-      .sort((a, b) => b.matchPercentage - a.matchPercentage)
-      .slice(0, 3);
-
-    res.status(200).json({ success: true, data: suggestions });
-  } catch (error) {
-    console.error('[Backend] Suggest presets error:', error);
-    res.status(500).json({ success: false, error: 'Failed to suggest presets' });
-  }
-};
-
-export const usePreset = (req: Request, res: Response): void => {
-  try {
-    const { id } = req.params;
-    const current = db.prepare('SELECT usageCount FROM mappings WHERE id = ?').get(id) as { usageCount: number } | undefined;
-    if (!current) {
-      res.status(404).json({ success: false, error: 'Preset not found' });
-      return;
-    }
-
-    db.prepare('UPDATE mappings SET usageCount = usageCount + 1, lastUsedAt = CURRENT_TIMESTAMP WHERE id = ?').run(id);
-
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('[Backend] Use preset error:', error);
-    res.status(500).json({ success: false, error: 'Failed to use preset' });
-  }
-};
-
-export const getPresetById = (req: Request, res: Response): void => {
-  try {
-    const { id } = req.params;
-    const row = db.prepare('SELECT * FROM mappings WHERE id = ?').get(id) as any;
-    if (!row) {
-      res.status(404).json({ success: false, error: 'Preset not found' });
-      return;
-    }
-    
-    res.status(200).json({ 
-      success: true, 
-      data: {
-        ...row,
-        mappingJson: JSON.parse(row.mappingJson),
-        sourceHeaders: row.sourceHeaders ? JSON.parse(row.sourceHeaders) : [],
-        ignoredColumns: row.ignoredColumns ? JSON.parse(row.ignoredColumns) : []
-      } 
-    });
-  } catch (error) {
-    console.error('[Backend] Get preset error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get preset' });
-  }
-};
+// Dead preset handlers removed (routes no longer exposed in privacy-safe public demo):
+// - getPresets
+// - createPreset
+// - updatePreset
+// - deletePreset
+// - suggestPresets
+// - usePreset
+// - getPresetById

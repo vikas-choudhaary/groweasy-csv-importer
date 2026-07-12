@@ -67,6 +67,10 @@ Messy Row,,9999999999,8888888888,,,Duplicate phones,INVALID,01-01-2022,,
         
         <FileUpload onFileAccepted={onFileAccepted} maxSizeMB={50} />
         
+        <div className="mt-3 px-3 py-2 bg-[#9b87f5]/5 border border-[#9b87f5]/20 rounded-lg text-xs text-(--color-foreground)/60 tracking-tight">
+          <strong className="text-[#9b87f5]">Privacy Notice:</strong> Uploaded CSV data is processed only for the current import workflow. Data is sent to Google Gemini AI for field extraction. Do not upload highly sensitive personal information to this public demonstration application.
+        </div>
+        
         {error && (
           <div className="mt-4 text-center text-(--color-error) text-sm font-medium bg-(--color-error)/10 p-4 rounded-xl border border-(--color-error)/20 tracking-tight backdrop-blur-sm">
             {error}

@@ -1,16 +1,19 @@
 import { Router } from 'express';
-import { suggestMappings, validateMapping, getPresets, createPreset, updatePreset, deletePreset, suggestPresets, usePreset, getPresetById } from '../controllers/mapping.controller';
+import { suggestMappings, validateMapping } from '../controllers/mapping.controller';
 
 const router = Router();
 
-router.post('/suggest', suggestMappings);
-router.post('/validate', validateMapping);
-router.get('/presets/suggest', suggestPresets);
-router.get('/presets', getPresets);
-router.get('/presets/:id', getPresetById);
-router.post('/presets', createPreset);
-router.put('/presets/:id', updatePreset);
-router.post('/presets/:id/use', usePreset);
-router.delete('/presets/:id', deletePreset);
+// Active routes for privacy-safe public demo
+router.post('/suggest', suggestMappings);      // AI mapping suggestions
+router.post('/validate', validateMapping);     // Mapping validation
+
+// Removed routes (privacy-safe public demo):
+// - GET /presets/suggest (preset suggestions)
+// - GET /presets (list presets)
+// - GET /presets/:id (get preset)
+// - POST /presets (create preset)
+// - PUT /presets/:id (update preset)
+// - POST /presets/:id/use (use preset)
+// - DELETE /presets/:id (delete preset)
 
 export default router;

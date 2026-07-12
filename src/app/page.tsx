@@ -124,31 +124,7 @@ export default function Home() {
   };
 
   const handleProceedToMapping = async () => {
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
-      const urlParams = new URLSearchParams(window.location.search);
-      const presetId = urlParams.get('presetId');
-
-      if (presetId) {
-        const presetRes = await fetch(`${baseUrl}/api/mappings/presets/${presetId}`);
-        const presetData = await presetRes.json();
-        if (presetData.success) {
-           setSelectedPreset(presetData.data);
-           setAppState("mapping");
-           return;
-        }
-      }
-
-      const res = await fetch(`${baseUrl}/api/mappings/presets/suggest?headers=${encodeURIComponent(headers.join(','))}`);
-      const data = await res.json();
-      if (data.success && data.data && data.data.length > 0) {
-        setCompatibilitySuggestions(data.data);
-        setAppState("compatibility");
-        return;
-      }
-    } catch (e) {
-      console.error('Failed to check compatibility', e);
-    }
+    // Privacy-safe public demo: Skip preset suggestions, go directly to mapping
     setAppState("mapping");
   };
 
@@ -316,13 +292,7 @@ export default function Home() {
                 <CompatibilityPrompt 
                   suggestions={compatibilitySuggestions}
                   onSkip={() => setAppState("mapping")}
-                  onApply={async (preset) => {
-                    try {
-                      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
-                      await fetch(`${baseUrl}/api/mappings/presets/${preset.id}/use`, { method: 'POST' });
-                    } catch (e) {
-                      console.error('Failed to update preset usage', e);
-                    }
+                  onApply={(preset) => {
                     setSelectedPreset(preset);
                     setAppState("mapping");
                   }}

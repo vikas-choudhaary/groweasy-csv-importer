@@ -2,7 +2,7 @@ import { JobState } from '../types';
 
 class JobService {
   private jobs = new Map<string, { state: JobState, createdAt: number }>();
-  private readonly TTL_MS = 1000 * 60 * 60; // 1 hour
+  private readonly TTL_MS = 1000 * 60 * 30; // 30 minutes (privacy-safe public demo)
 
   createJob(id: string, totalRecords: number, batchesTotal: number): JobState {
     const job: JobState = {
@@ -24,14 +24,15 @@ class JobService {
   }
 
   getJob(id: string): JobState | undefined {
+    this.cleanupOldJobs(); // Cleanup on every get to ensure timely expiration
     return this.jobs.get(id)?.state;
   }
 
   private cleanupOldJobs() {
     const now = Date.now();
     for (const [id, jobData] of this.jobs.entries()) {
-      if (now - jobData.createdAt > this.TTL_MS && (jobData.state.status === 'completed' || jobData.state.status === 'failed')) {
-        console.debug(`[Backend] JobService: Cleaning up expired job ${id}`);
+      if (now - jobData.createdAt > this.TTL_MS) {
+        console.debug(`[Backend] JobService: Cleaning up expired job ${id} (age: ${Math.round((now - jobData.createdAt) / 1000 / 60)}min)`);
         this.jobs.delete(id);
       }
     }

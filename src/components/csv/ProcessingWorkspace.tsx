@@ -239,6 +239,7 @@ export function ProcessingWorkspace({
                  stroke="currentColor" strokeWidth="1" fill="none"
                  className={cn(isError ? "text-(--color-error)/30" : isDone ? "text-(--color-success)/30" : "text-(--color-primary)/30")}
                  strokeDasharray="4 4"
+                 initial={{ strokeDashoffset: 0 }}
                  animate={!isError && !isDone ? { strokeDashoffset: -20 } : { strokeDashoffset: 0 }}
                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
                />
@@ -247,6 +248,7 @@ export function ProcessingWorkspace({
                  stroke="currentColor" strokeWidth="1" fill="none"
                  className={cn(isError ? "text-(--color-error)/30" : isDone ? "text-(--color-success)/30" : "text-(--color-primary)/30")}
                  strokeDasharray="4 4"
+                 initial={{ strokeDashoffset: 0 }}
                  animate={!isError && !isDone ? { strokeDashoffset: -20 } : { strokeDashoffset: 0 }}
                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
                />
