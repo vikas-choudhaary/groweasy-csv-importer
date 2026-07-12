@@ -7,6 +7,26 @@ const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+function isQuotaError(err: any): boolean {
+  if (!err) return false;
+
+  if (err.statusCode === 429) return true;
+  if (err.code === 429) return true;
+  if (err.status === 'RESOURCE_EXHAUSTED') return true;
+  if (typeof err.message === 'string' && (err.message.includes('quota exceeded') || err.message.includes('RESOURCE_EXHAUSTED'))) return true;
+
+  if (err.cause && isQuotaError(err.cause)) return true;
+  if (err.lastError && isQuotaError(err.lastError)) return true;
+  if (err.data?.error && isQuotaError(err.data.error)) return true;
+  if (Array.isArray(err.errors)) {
+    for (const e of err.errors) {
+      if (isQuotaError(e)) return true;
+    }
+  }
+
+  return false;
+}
+
 export const suggestMappings = async (req: Request, res: Response): Promise<void> => {
   try {
     const { unresolvedColumns, targetSchema, sampleRecords } = req.body;
@@ -74,7 +94,7 @@ export const suggestMappings = async (req: Request, res: Response): Promise<void
       }).filter(sug => sug.targetField !== ''); // Rule 3: Do not map if it doesn't belong
 
       console.log(`[mapping] generated mappings: ${JSON.stringify(suggestions)}`);
-      
+
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       console.log(`[mapping] response sent`);
@@ -113,12 +133,28 @@ Rules:
       }))
     });
 
-    const { object } = await generateObject({
-      model: google('gemini-2.5-flash'),
-      schema: suggestionSchema,
-      prompt: prompt,
-      temperature: 0.1,
-    });
+    console.log(`[DIAGNOSIS] API Key Prefix: ${process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.slice(0, 10) : 'undefined'}`);
+    const exactModelId = 'gemini-3.5-flash';
+    console.log(`[DIAGNOSIS] Model Identifier being used: ${exactModelId}`);
+
+    let object;
+    try {
+      const result = await generateObject({
+        model: google(exactModelId),
+        schema: suggestionSchema,
+        prompt: prompt,
+        temperature: 0.1,
+      });
+      object = result.object;
+    } catch (error: any) {
+      if (isQuotaError(error)) {
+        res.status(429).json({
+          error: 'Gemini API quota exceeded. Please wait about a minute and try again.'
+        });
+        return;
+      }
+      throw error;
+    }
 
     const formattedSuggestions = object.suggestions.map(sug => ({
       sourceColumn: sug.sourceColumn,
@@ -136,29 +172,6 @@ Rules:
     res.status(200).json({ success: true, data: formattedSuggestions });
   } catch (error: unknown) {
     console.error('[Backend] Suggestion error:', error);
-    
-    // Check if this is a Gemini API quota/rate limit error
-    const err = error as any;
-    const isQuotaError = 
-      err?.statusCode === 429 ||
-      err?.status === 429 ||
-      err?.code === 'RESOURCE_EXHAUSTED' ||
-      (err?.message && (
-        err.message.includes('quota exceeded') ||
-        err.message.includes('rate limit') ||
-        err.message.includes('RESOURCE_EXHAUSTED') ||
-        err.message.includes('429')
-      ));
-    
-    if (isQuotaError) {
-      res.status(429).json({ 
-        success: false, 
-        error: 'Gemini API quota exceeded. Please wait about a minute and try again.' 
-      });
-      return;
-    }
-    
-    // For all other errors, continue returning HTTP 500
     res.status(500).json({ success: false, error: 'Failed to generate suggestions' });
   }
 };

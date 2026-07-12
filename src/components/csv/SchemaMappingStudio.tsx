@@ -63,7 +63,7 @@ export function SchemaMappingStudio({ headers, records, onContinue, onBack }: Sc
                 // Handle Gemini API rate limit
                 const errorData = await res.json();
                 console.warn('Gemini API rate limit reached:', errorData.error);
-                // Don't break the UI - just log and continue without AI suggestions
+                setAiError(errorData.error || 'Gemini API rate limit reached. Please wait about a minute and try again.');
                 return;
               }
               
@@ -339,6 +339,16 @@ export function SchemaMappingStudio({ headers, records, onContinue, onBack }: Sc
               <span key={idx}>{err}</span>
             ))}
           </div>
+        </div>
+      )}
+
+      {aiError && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2 flex items-center gap-3 text-sm text-amber-400">
+          <Warning weight="bold" />
+          <span>{aiError}</span>
+          <button onClick={() => setAiError(null)} className="ml-auto hover:text-white transition-colors">
+            <X weight="bold" />
+          </button>
         </div>
       )}
 

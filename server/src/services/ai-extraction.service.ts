@@ -11,7 +11,7 @@ export async function extractRecordsWithGemini(recordsBatch: Record<string, unkn
     // Network delay simulation (1000ms - 2000ms)
     const delay = Math.floor(Math.random() * 1000) + 1000;
     await new Promise((resolve) => setTimeout(resolve, delay));
-    
+
     // Deterministic mock mapping
     return recordsBatch.map((record) => {
       // Helper: pick first truthy value from a list of candidate keys (case-insensitive key lookup)
@@ -76,7 +76,7 @@ ${JSON.stringify(recordsBatch, null, 2)}
 
   try {
     const { object } = await generateObject({
-      model: google('gemini-2.5-flash'),
+      model: google('gemini-3.5-flash'),
       schema: aiExtractionResponseSchema,
       prompt: prompt,
       temperature: 0.1,

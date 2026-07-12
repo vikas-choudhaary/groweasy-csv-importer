@@ -31,9 +31,9 @@ export function MappingConstellation() {
       </div>
 
       {/* Connecting lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
         <motion.path 
-          d="M 30% 38% Q 50% 50% 70% 42%" 
+          d="M 30 38 Q 50 50 70 42" 
           fill="none" 
           stroke="var(--color-primary)" 
           strokeWidth="1"
@@ -43,7 +43,7 @@ export function MappingConstellation() {
           transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
         />
         <motion.path 
-          d="M 30% 62% Q 50% 50% 70% 58%" 
+          d="M 30 62 Q 50 50 70 58" 
           fill="none" 
           stroke="var(--color-foreground)" 
           strokeWidth="0.5"

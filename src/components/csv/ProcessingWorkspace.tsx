@@ -233,9 +233,9 @@ export function ProcessingWorkspace({
           
           {/* Animated SVG Path connections (background) */}
           <div className="hidden md:block absolute inset-0 pointer-events-none z-0">
-             <svg width="100%" height="100%" preserveAspectRatio="none">
+             <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
                <motion.path 
-                 d="M 25% 50% Q 35% 50% 40% 50%" 
+                 d="M 25 50 Q 35 50 40 50" 
                  stroke="currentColor" strokeWidth="1" fill="none"
                  className={cn(isError ? "text-(--color-error)/30" : isDone ? "text-(--color-success)/30" : "text-(--color-primary)/30")}
                  strokeDasharray="4 4"
@@ -244,7 +244,7 @@ export function ProcessingWorkspace({
                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
                />
                <motion.path 
-                 d="M 60% 50% Q 65% 50% 75% 50%" 
+                 d="M 60 50 Q 65 50 75 50" 
                  stroke="currentColor" strokeWidth="1" fill="none"
                  className={cn(isError ? "text-(--color-error)/30" : isDone ? "text-(--color-success)/30" : "text-(--color-primary)/30")}
                  strokeDasharray="4 4"
